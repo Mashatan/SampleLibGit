@@ -94,7 +94,7 @@ Rectangle {
 			}
 			TextInput{
 				id: pathInput
-				text: "c:/temp/test"
+				text: "/home/ali/temp/test"
 			}
 		}
 		RowLayout {
@@ -105,6 +105,26 @@ Rectangle {
 			TextInput{
 				id: commitInput
 				text: "test"
+			}
+		}
+		RowLayout {
+			Text{
+				id: authortText
+				text: "Author:"
+			}
+			TextInput{
+				id: authorInput
+				text: "Ali"
+			}
+		}
+		RowLayout {
+			Text{
+				id: emailText
+				text: "Email:"
+			}
+			TextInput{
+				id: emailInput
+				text: "ali@ethdev.com"
 			}
 		}
 		RowLayout {
@@ -156,8 +176,8 @@ Rectangle {
 			Button{
 				text: "Commit"
 				onClicked: {
-					gitrepo.setAuthor("Ali");
-					gitrepo.setEmail("Ali@ethdev.com");
+					gitrepo.setAuthor(authorInput.text);
+					gitrepo.setEmail(emailInput.text);
 					gitrepo.commit(commitInput.text);
 				}
 			}

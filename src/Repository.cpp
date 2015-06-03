@@ -67,8 +67,9 @@ QString Repository::getPassword()
 
 bool Repository::open(const QString &_repoPath)
 {
-	int error;
-	if (error = git_repository_open(&m_repositoryPrivate->m_ptrRepo, _repoPath.toStdString().c_str()) != 0)
+	int error = 0;
+	error = git_repository_open(&m_repositoryPrivate->m_ptrRepo, _repoPath.toStdString().c_str());
+	if ( error )
 	{
 		signalError(error);
 		getStausFiles();
@@ -92,7 +93,7 @@ void Repository::close()
 
 bool Repository::clone(const QString &_repoPath)
 {
-	RepositoryPrivate::CommonData commonData = { { 0 } };
+	RepositoryPrivate::CommonData commonData; //= {{0}};
 	commonData.ptrRepo = this;
 	commonData.ptrPrivateRepo = m_repositoryPrivate;
 	git_clone_options cloneOptions = GIT_CLONE_OPTIONS_INIT;
@@ -100,7 +101,7 @@ bool Repository::clone(const QString &_repoPath)
 	int error;
 
 	// Set up options
-	checkoutOptions.checkout_strategy = GIT_CHECKOUT_SAFE;
+	checkoutOptions.checkout_strategy = GIT_CHECKOUT_SAFE_CREATE;
 	checkoutOptions.progress_payload = &commonData;
 	cloneOptions.checkout_opts = checkoutOptions;
 	cloneOptions.remote_callbacks.transfer_progress = [](const git_transfer_progress *stats, void *payload) -> int
@@ -125,8 +126,9 @@ bool Repository::clone(const QString &_repoPath)
 		return git_cred_userpass_plaintext_new(out, commonData->ptrRepo->getUsername().toStdString().c_str(), commonData->ptrRepo->getPassword().toStdString().c_str());
 	};
 	cloneOptions.remote_callbacks.payload = &commonData;
-	git_repository * ptrRepo;
-	if (error = git_clone(&ptrRepo, m_repoURL.toStdString().c_str(), _repoPath.toStdString().c_str(), &cloneOptions) < 0)
+	git_repository * ptrRepo = NULL;
+	error = git_clone(&ptrRepo, m_repoURL.toStdString().c_str(), _repoPath.toStdString().c_str(), &cloneOptions);
+	if ( error < 0)
 	{
 		signalError(error);
 		return false;
@@ -138,7 +140,7 @@ bool Repository::clone(const QString &_repoPath)
 	return true;
 }
 
-void Repository::signalError(qint32 _error, QString &_hint /*= QString()*/)
+void Repository::signalError(qint32 _error, const QString &_hint /*= QString()*/)
 {
 	const git_error *err = giterr_last();
 	if (err)
@@ -149,22 +151,25 @@ void Repository::signalError(qint32 _error, QString &_hint /*= QString()*/)
 
 bool Repository::addFilenameToRepo(const QString &_filename)
 {
-	git_index *index;
-	int error;
+	git_index *index = NULL;
+	int error = 0;
 
-	if (error = git_repository_index(&index, m_repositoryPrivate->m_ptrRepo) < 0)
+	error = git_repository_index(&index, m_repositoryPrivate->m_ptrRepo);
+	if (error < 0)
 	{
 		signalError(error);
 		return false;
 	}
 
-	if (error = git_index_add_bypath(index, _filename.toStdString().c_str()))
+	error = git_index_add_bypath(index, _filename.toStdString().c_str());
+	if (error)
 	{
 		signalError(error);
 		return false;
 	}
 
-	if (error = git_index_write(index) < 0)
+	error = git_index_write(index);
+	if (error < 0)
 	{
 		signalError(error);
 		return false;
@@ -178,21 +183,24 @@ bool Repository::removeFilenameFromRepo(const QString &_filename)
 {
 	git_oid treeID;
 	git_index *index;
-	int error;
+	int error = 0;
 
-	if (error = git_repository_index(&index, m_repositoryPrivate->m_ptrRepo))
+	error = git_repository_index(&index, m_repositoryPrivate->m_ptrRepo);
+	if (error)
 	{
 		signalError(error);
 		return false;
 	}
 
-	if (error = git_index_remove_bypath(index, _filename.toStdString().c_str()))
+	error = git_index_remove_bypath(index, _filename.toStdString().c_str());
+	if (error)
 	{
 		signalError(error);
 		return false;
 	}
 
-	if (error = git_index_write_tree(&treeID, index))
+	error = git_index_write_tree(&treeID, index);
+	if (error)
 	{
 		signalError(error);
 		return false;
@@ -240,13 +248,15 @@ bool Repository::commit(const QString &_commitMessage)
 	git_signature_new((git_signature **)&author,
 					  m_author.toStdString().c_str(), m_email.toStdString().c_str(), QDateTime::currentDateTime().toTime_t(), 60);
 
-	if (error = git_repository_index(&index, m_repositoryPrivate->m_ptrRepo))
+	error = git_repository_index(&index, m_repositoryPrivate->m_ptrRepo);
+	if (error)
 	{
 		signalError(error);
 		return false;
 	}
 
-	if (error = git_index_write_tree(&treeID, index))
+	error = git_index_write_tree(&treeID, index);
+	if (error)
 	{
 		signalError(error);
 		return false;
@@ -254,16 +264,18 @@ bool Repository::commit(const QString &_commitMessage)
 
 	git_index_free(index);
 
-	if (error = git_tree_lookup(&tree, m_repositoryPrivate->m_ptrRepo, &treeID))
+	error = git_tree_lookup(&tree, m_repositoryPrivate->m_ptrRepo, &treeID);
+	if (error)
 	{
 		signalError(error);
 		return false;
 	}
 	parent = m_repositoryPrivate->GetLastCommit();
 
-	if (error = git_commit_create_v(
-				&commitID, m_repositoryPrivate->m_ptrRepo, "HEAD", author, author,
-				NULL, _commitMessage.toUtf8(), tree, 1, parent))
+	error = git_commit_create_v(
+					&commitID, m_repositoryPrivate->m_ptrRepo, "HEAD", author, author,
+					NULL, _commitMessage.toUtf8(), tree, 1, parent);
+	if (error)
 	{
 		signalError(error);
 		return false;
@@ -279,12 +291,13 @@ bool Repository::commit(const QString &_commitMessage)
 
 bool Repository::fetch()
 {
-	RepositoryPrivate::CommonData commonData = { { 0 } };
+	RepositoryPrivate::CommonData commonData ;//= { { 0 } };
 	git_remote *remote = NULL;
-	const git_transfer_progress *stats;
+	//const git_transfer_progress *stats = NULL;
 	git_remote_callbacks callbacks = GIT_REMOTE_CALLBACKS_INIT;
-	int error;
-	if (error = git_remote_lookup(&remote, m_repositoryPrivate->m_ptrRepo, "origin"))
+	int error=0;
+	error = git_remote_lookup(&remote, m_repositoryPrivate->m_ptrRepo, "origin");
+	if (error)
 	{
 		signalError(error);
 		return false;
@@ -330,15 +343,17 @@ bool Repository::fetch()
 	callbacks.payload = &commonData;
 	git_remote_set_callbacks(remote, &callbacks);
 
-	stats = git_remote_stats(remote);
+	git_remote_stats(remote);
 
-	if (error = git_remote_connect(remote, GIT_DIRECTION_FETCH))
+	error = git_remote_connect(remote, GIT_DIRECTION_FETCH);
+	if (error)
 	{
 		signalError(error);
 		return false;
 	}
 
-	if (error = git_remote_download(remote, NULL))
+	error = git_remote_download(remote, NULL);
+	if (error)
 	{
 		signalError(error);
 		return false;
@@ -346,7 +361,8 @@ bool Repository::fetch()
 
 	git_remote_disconnect(remote);
 
-	if (error = git_remote_update_tips(remote, NULL))
+	error = git_remote_update_tips(remote, NULL, NULL);
+	if (error)
 	{
 		signalError(error);
 		return false;
@@ -365,14 +381,16 @@ bool Repository::push()
 		return false;
 	}
 
-	RepositoryPrivate::CommonData commonData = { { 0 } };
+	RepositoryPrivate::CommonData commonData ;//= { { 0 } };
 	commonData.ptrRepo = this;
 	commonData.ptrPrivateRepo = m_repositoryPrivate;
 	git_remote *remote = NULL;
-	const git_transfer_progress *stats;
+	//const git_transfer_progress *stats = NULL;
 	git_remote_callbacks callbacks = GIT_REMOTE_CALLBACKS_INIT;
-	int error;
-	if (error = git_remote_lookup(&remote, m_repositoryPrivate->m_ptrRepo, "origin"))
+	int error=0;
+
+	error = git_remote_lookup(&remote, m_repositoryPrivate->m_ptrRepo, "origin");
+	if (error)
 	{
 		signalError(error);
 		return false;
@@ -414,9 +432,10 @@ bool Repository::push()
 	callbacks.payload = &commonData;
 	git_remote_set_callbacks(remote, &callbacks);
 
-	stats = git_remote_stats(remote);
+	git_remote_stats(remote);
 
-	if (error = git_remote_connect(remote, GIT_DIRECTION_PUSH))
+	error = git_remote_connect(remote, GIT_DIRECTION_PUSH);
+	if (error)
 	{
 		signalError(error);
 		return false;
@@ -427,7 +446,8 @@ bool Repository::push()
 
 	git_remote_add_push(remote, "refs/heads/master:refs/heads/master");
 
-	if (error = git_remote_upload(remote, NULL, &options))
+	error = git_remote_upload(remote, NULL, &options);
+	if (error)
 	{
 		signalError(error);
 		return false;
@@ -435,7 +455,8 @@ bool Repository::push()
 
 	git_remote_disconnect(remote);
 
-	if (error = git_remote_update_tips(remote, NULL))
+	error = git_remote_update_tips(remote, NULL, NULL);
+	if (error)
 	{
 		signalError(error);
 		return false;
@@ -447,7 +468,7 @@ bool Repository::push()
 
 bool Repository::merge()
 {
-	int error;
+	int error = 0;
 	std::vector<git_annotated_commit*> commits;
 	RepositoryPrivate::MergeData mergeData;
 	mergeData.commits = &commits;
@@ -457,22 +478,26 @@ bool Repository::merge()
 									 (const char *ref_name, const char *remote_url, const git_oid *oid, unsigned int is_merge, void *payload) -> int
 	{
 		RepositoryPrivate::MergeData *mergeData = (RepositoryPrivate::MergeData*)payload;
-		git_annotated_commit* commit;
+		git_annotated_commit* commit = NULL;
 		int error = git_annotated_commit_from_fetchhead(&commit, mergeData->ptrRepo, "master", remote_url, oid);
 		mergeData->commits->push_back(commit);
 		return error;
 	}, (void*)&mergeData);
 
-	git_merge_options mergopts = GIT_MERGE_OPTIONS_INIT;
-	// Favor theirs
-	mergopts.file_favor = GIT_MERGE_FILE_FAVOR_THEIRS;
+	//git_merge_options mergopts = GIT_MERGE_OPTIONS_INIT;
+	//mergopts.file_favor = GIT_MERGE_FILE_FAVOR_THEIRS;
 	if (commits.size() > 0)
 	{
 		error = git_merge(m_repositoryPrivate->m_ptrRepo, (const git_annotated_commit**)&commits[0], commits.size(), NULL, NULL);
-	}
-	for (auto commit : commits)
-	{
-		git_annotated_commit_free(commit);
+		if (error)
+		{
+			signalError(error);
+			return false;
+		}
+		for (auto commit : commits)
+		{
+			git_annotated_commit_free(commit);
+		}
 	}
 	getStausFiles();
 	return true;
@@ -513,15 +538,16 @@ bool Repository::getStausFiles()
 		emit errorMessage(-1, tr("Reposetry is not opened"), QString());
 		return false;
 	}
-	git_status_list *status;
-	if (error = git_status_list_new(&status, m_repositoryPrivate->m_ptrRepo, &statusopt))
+	git_status_list *status = NULL;
+	error = git_status_list_new(&status, m_repositoryPrivate->m_ptrRepo, &statusopt);
+	if (error)
 	{
 		signalError(error);
 		return false;
 	}
 	size_t statusCount = git_status_list_entrycount(status);
 	//qDebug() << "C counter : " << statusCount;
-	for (int i = 0; i < statusCount; i++)
+	for (unsigned int i = 0; i < statusCount; i++)
 	{
 		const git_status_entry *s = git_status_byindex(status, i);
 		StatusFile::StausType statusType = StatusFile::Unknown;
@@ -544,9 +570,9 @@ bool Repository::getStausFiles()
 		case GIT_STATUS_WT_MODIFIED:
 			statusType = StatusFile::Modified;
 		break;
-        case GIT_STATUS_WT_RENAMED:
-        case GIT_STATUS_INDEX_RENAMED:
-            statusType = StatusFile::Renamed;
+		case GIT_STATUS_WT_RENAMED:
+		case GIT_STATUS_INDEX_RENAMED:
+			statusType = StatusFile::Renamed;
 		break;
 		case GIT_STATUS_INDEX_TYPECHANGE:
 			statusType = StatusFile::TypeChange;

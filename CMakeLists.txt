@@ -19,6 +19,10 @@ set(QT_USE_QTDECLARATIVE TRUE)
 
 qt5_add_resources(UI_RESOURCES Resource.qrc)
 
+if(UNIX)
+        SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -std=c++11")
+endif()
+
 add_executable(SampleLibGit
 		WIN32 sample/main.cpp
 		test/GitClientTest.h
@@ -52,4 +56,8 @@ IF(WIN32) # Check if we are on Windows
 		set_target_properties(SampleLibGit PROPERTIES LINK_FLAGS_RELEASE "/SUBSYSTEM:WINDOWS")
 		set_target_properties(SampleLibGit PROPERTIES LINK_FLAGS_DEBUG "/SUBSYSTEM:CONSOLE")
 	endif()
+endif()
+
+If(UNIX)
+        target_link_libraries(SampleLibGit "${CMAKE_CURRENT_SOURCE_DIR}/libgit/unix/libgit2.so")
 endif()

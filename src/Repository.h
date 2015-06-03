@@ -95,7 +95,7 @@ namespace Git
 		QString m_repoPath;
 		QString m_repoURL;
 
-		void signalError(qint32 _error, QString &_hint = QString());
+		void signalError(qint32 _error, const QString &_hint = QString());
 	};
 }
 Q_DECLARE_METATYPE(Git::Repository::UpdateTips)

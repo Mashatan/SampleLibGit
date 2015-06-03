@@ -31,7 +31,7 @@ namespace Git
 			Unknown,
 		};
 
-		StatusFile(	QObject* _parent=nullptr): QObject(_parent) {}
+		StatusFile(	QObject* _parent=NULL): QObject(_parent) {}
 		StatusFile(	QObject* _parent,
 					QString _oldPath,
 					QString _newPath,
@@ -39,9 +39,9 @@ namespace Git
 								QObject(_parent),
 								m_oldPath(_oldPath),
 								m_newPath(_newPath),
-								m_statusType(_statusType),
 								m_addToggle(false),
-								m_removeToggle(false)
+								m_removeToggle(false),
+								m_statusType(_statusType)
 		{}
 		~StatusFile() {}
 		QString oldPath() const { return m_oldPath; }

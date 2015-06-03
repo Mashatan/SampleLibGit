@@ -15,20 +15,13 @@ private slots:
 	{
 
 		Git::Repository repository;
-		bool connectResult;
-		connectResult = connect(&repository, SIGNAL(onError(qint32, const QString &, const QString &)), SLOT(doError(qint32, const QString &, const QString &)));
-		Q_ASSERT(connectResult);
-		connectResult = connect(&repository, SIGNAL(onRemoteCredential(QString&, QString &)), SLOT(doRemoteCredential(QString&, QString&)));
-		Q_ASSERT(connectResult);
-		connectResult = connect(&repository, SIGNAL(onRemoteTransfer(quint32, quint32, quint32, quint64)), SLOT(doRemoteTransfer(quint32, quint32, quint32, quint64)));
-		Q_ASSERT(connectResult);
-		connectResult = connect(&repository, SIGNAL(onRemoteFinishDownloading()), SLOT(doRemoteFinishDownloading()));
-		Q_ASSERT(connectResult);
-		connectResult = connect(&repository, SIGNAL(onRemoteFinishIndexing()), SLOT(doRemoteFinishIndexing()));
-		Q_ASSERT(connectResult);
-		connectResult = connect(&repository, SIGNAL(onRemoteUpdateTips(Git::Repository::UpdateTips, const QString &, const QString &)),
+		connect(&repository, SIGNAL(onError(qint32, const QString &, const QString &)), SLOT(doError(qint32, const QString &, const QString &)));
+		connect(&repository, SIGNAL(onRemoteCredential(QString&, QString &)), SLOT(doRemoteCredential(QString&, QString&)));
+		connect(&repository, SIGNAL(onRemoteTransfer(quint32, quint32, quint32, quint64)), SLOT(doRemoteTransfer(quint32, quint32, quint32, quint64)));
+		connect(&repository, SIGNAL(onRemoteFinishDownloading()), SLOT(doRemoteFinishDownloading()));
+		connect(&repository, SIGNAL(onRemoteFinishIndexing()), SLOT(doRemoteFinishIndexing()));
+		connect(&repository, SIGNAL(onRemoteUpdateTips(Git::Repository::UpdateTips, const QString &, const QString &)),
 												 SLOT(doRemoteUpdateTips(Git::Repository::UpdateTips, const QString &, const QString &)));
-		Q_ASSERT(connectResult);
 
 		repository.setRepoURL(QString("https://github.com/Mashatan/CustomCombobox"));
 		repository.setAuthor("Ali Mashatan");
@@ -62,7 +55,7 @@ private slots:
 		quint32 indexedObjects,
 		quint32 receivedObjects,
 		quint64 receivedBytes)
-   {
+	{
 		printf("Progress %d/%d\n", receivedObjects, totalObjects);
 	}
 	void doRemoteFinishDownloading()
@@ -75,7 +68,7 @@ private slots:
 	}
 	void doRemoteUpdateTips(Git::Repository::UpdateTips updateTips, const QString &from, const QString &to)
 	{
-		printf("%s	%s ... %s", updateTips == Git::Repository::upNew ? "New":"Update", from.toStdString(), to.toStdString());
+		printf("%s	%s ... %s", updateTips == Git::Repository::upNew ? "New":"Update", from.toStdString().c_str(), to.toStdString().c_str());
 	}
 private:
 };
