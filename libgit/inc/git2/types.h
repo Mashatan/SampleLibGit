@@ -302,7 +302,9 @@ typedef struct {
 /**
  * Callback for the user's custom certificate checks.
  *
- * @param cert The host certificate
+ * @param type The type of certificate or host info, SSH or X.509
+ * @param data The data for the certificate or host info
+ * @param len The size of the certificate or host info
  * @param valid Whether the libgit2 checks (OpenSSL or WinHTTP) think
  * this certificate is valid
  * @param host Hostname of the host libgit2 connected to
@@ -409,15 +411,6 @@ typedef enum {
 	GIT_SUBMODULE_RECURSE_YES = 1,
 	GIT_SUBMODULE_RECURSE_ONDEMAND = 2,
 } git_submodule_recurse_t;
-
-/** A type to write in a streaming fashion, for example, for filters. */
-typedef struct git_writestream git_writestream;
-
-struct git_writestream {
-	int (*write)(git_writestream *stream, const char *buffer, size_t len);
-	int (*close)(git_writestream *stream);
-	void (*free)(git_writestream *stream);
-};
 
 /** @} */
 GIT_END_DECL
